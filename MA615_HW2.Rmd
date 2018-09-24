@@ -1,0 +1,113 @@
+---
+title: "MA615_HW2"
+author: "SUMMER ZU"
+date: "September 16, 2018"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+This R Markdown document is made interactive using Shiny. Unlike the more traditional workflow of creating static reports, you can now create documents that allow your readers to change the assumptions underlying your analysis and see the results immediately. 
+
+To learn more, see [Interactive Documents](http://rmarkdown.rstudio.com/authoring_shiny.html).
+
+## Inputs and Outputs
+
+You can embed Shiny inputs and outputs in your document. Outputs are automatically updated whenever inputs change.  This demonstrates how a standard R plot can be made interactive by wrapping it in the Shiny `renderPlot` function. The `selectInput` and `sliderInput` functions create the input widgets used to drive the plot.
+
+```{r eruptions, echo=FALSE}
+inputPanel(
+  checkboxInput("smooth", label = "Add smoother?", value = FALSE)
+)
+renderPlot({
+  if(input$smooth){
+    scatter.smooth(LakeHuron, col="blue")
+    lines(LakeHuron, col="red")
+ } else{
+   plot(LakeHuron) }; 
+})
+```
+
+## Using ggplot
+```{r}
+#Plot
+plot(LakeHuron)
+# Scatterplot
+ggplot(data = as.data.frame(LakeHuron),mapping = aes(x=Time,y=LakeHuron))+geom_point()
+#Smooth scatterplot
+ggplot(data = as.data.frame(LakeHuron),mapping = aes(x=Time,y=LakeHuron))+geom_point()+geom_line(color="blue")+geom_smooth(stat = "smooth",color="red",se=F)
+```
+
+## 3.5.1 Exercise
+
+2.What do the empty cells in plot with facet_grid(drv ~ cyl) mean? How do they relate to this plot?
+
+Empty cells in plot with facet_grid(drv ~ cyl) mean that there were no rows with that combination of values in the original dataset.
+
+3. What plots does the following code make? What does . do?
+```{r}
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(drv ~ .)
+
+ggplot(data = mpg) + 
+  geom_point(mapping = aes(x = displ, y = hwy)) +
+  facet_grid(. ~ cyl)
+```
+. is just a placeholder so that we can have a facet in only one dimension. 
+
+## 3.6.1 Exercise
+
+6. 
+
+```{r}
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, group=drv))+ 
+  geom_point() + geom_smooth(se = FALSE)
+
+ggplot(data = mpg, mapping = aes(x = displ, y = hwy, group=drv))+
+  geom_smooth(se = FALSE) + geom_point()
+
+baseplot <- ggplot(data = mpg, mapping = aes(x = displ, y = hwy))
+baseplot + geom_point(aes(colour = drv)) + geom_smooth(aes(colour = drv), se=FALSE)
+baseplot + geom_point(aes(colour = drv)) + geom_smooth(se=FALSE)
+baseplot + geom_point(aes(colour = drv)) + geom_smooth(aes(linetype=drv), se=FALSE)
+baseplot + geom_point(size = 4, colour = "white") + geom_point(aes(colour = drv))
+```
+
+## 5.2.4 Exercise
+
+1.Find all flights that
+
+ 1.Had an arrival delay of two or more hours
+ 2.Flew to Houston (IAH or HOU)
+ 3.Were operated by United, American, or Delta
+ 4.Departed in summer (July, August, and September)
+ 5.Arrived more than two hours late, but didn’t leave late
+ 6.Were delayed by at least an hour, but made up over 30 minutes in flight
+ 7.Departed between midnight and 6am (inclusive)
+```{r}
+filter(flights, arr_delay>=120)
+filter(flights, dest == 'IAH' | dest == 'HOU')
+filter(flights, carrier %in% c('UA','AA','DL'))
+filter(flights, month %in% c(7, 8, 9))
+filter(flights, arr_delay > 120, dep_delay <= 0)
+filter(flights, dep_delay >= 60, dep_delay-arr_delay > 30)
+filter(flights, dep_time <=600 | dep_time == 2400)
+```
+
+2.Another useful dplyr filtering helper is between(). What does it do? Can you use it to simplify the code needed to answer the previous challenges?
+```{r}
+filter(flights, between(month, 7, 9))
+filter(flights, !between(dep_time, 601, 2359))
+```
+
+3.How many flights have a missing dep_time? What other variables are missing? What might these rows represent?
+```{r}
+summary(flights)
+```
+
+4.Why is NA ^ 0 not missing? Why is NA | TRUE not missing? Why is FALSE & NA not missing? Can you figure out the general rule? (NA * 0 is a tricky counterexample!)
+
+NA ^ 0 equals to 1. The | operator returns TRUE if either of the terms are true. NA | TRUE is true because the right side returns true. 
