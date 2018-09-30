@@ -1,0 +1,121 @@
+---
+title: "MA615 Assignment 3"
+author: "Andrew Zhang, Ningze Zu"
+date: "9/30/2018"
+output: pdf_document
+---
+
+https://www.kaggle.com/drgilermo/nba-players-stats#Seasons_Stats.csv
+
+There is a schema for each of the variables available in the link above.
+
+Also put your name as an author above.
+
+```{r, Andrew}
+library(dplyr)
+library(ggplot2)
+season_ball <- read.csv("Seasons_Stats.csv")
+season_ball$blank2 <- NULL
+season_ball$blanl <- NULL
+season_ball <- na.omit(season_ball)
+
+## Looking and comparing win shares and number of three pointers made
+## Comparing different eras of basketball to understand styles of play
+
+## 2017 Season
+ball_2017 <- season_ball %>% filter(Year == 2017)
+
+ball_2017 %>% arrange(desc(X3P))
+ball_2017 %>% arrange(desc(WS))
+
+ggplot(ball_2017, aes(X3P, WS)) + geom_point() +
+  geom_smooth(method = "lm")
+
+## 2010 Season
+ball_2010 <- season_ball %>% filter(Year == 2010)
+
+ball_2010 %>% arrange(desc(X3P))
+ball_2010 %>% arrange(desc(WS))
+
+ggplot(ball_2010, aes(X3P, WS)) + geom_point() +
+  geom_smooth(method = "lm")
+
+## 2003 Season
+ball_2003 <- season_ball %>% filter(Year == 2003)
+
+ball_2003 %>% arrange(desc(X3P))
+ball_2003 %>% arrange(desc(WS))
+
+ggplot(ball_2003, aes(X3P, WS)) + geom_point() +
+  geom_smooth(method = "lm")
+
+## Look at the number of 3 pointers made per team
+## Notice the top teams from 2017 have some of the highest number of 3 pointers made
+
+ball_2017 %>% group_by(Tm) %>% summarize(sum(X3P))
+```
+
+We can see a more positive trend for the 2017 data. This can possibly indicate more of a correlation between number of threes made and how well a team might do.
+
+```{r, age}
+ball_2017 %>% arrange(desc(Age))
+
+ggplot(ball_2017, aes(Age, MP)) + geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(ball_2010, aes(Age, MP)) + geom_point() +
+  geom_smooth(method = "lm")
+
+ggplot(ball_2003, aes(Age, MP)) + geom_point() +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+View(season_ball)
+```
+
+
+```{r}
+#Players' age over 25
+ball1 <- filter(season_ball, !is.na(Age) & Age >= 25)
+ball1
+
+ball2 <- select(ball1, Year, Player, Tm, Age, Pos, G, PTS)
+ball2
+
+arrange(ball2, desc(PTS))
+
+ggplot(ball2, aes(Age, PTS)) + geom_point() +
+  geom_smooth(method = "lm")
+
+#2008 Season
+b1 <- filter(season_ball, Year==2008)
+b2 <- select(b1, Year, Player, Tm, Age, Pos, G, X3P, X2P, PTS) 
+b2
+
+b2 %>%
+  arrange(desc(PTS)) %>%
+  summarise(total = n(), min.PTS = min(PTS), average.PTS = mean(PTS), max.PTS = max(PTS))
+
+b2 %>%
+  arrange(desc(X3P)) %>%
+  summarise(total = n(), min.X3P = min(X3P), average.X3P = mean(X3P), max.X3P = max(X3P))
+
+b2 %>%
+  arrange(desc(X2P)) %>%
+  summarise(total = n(), min.X2P = min(X2P), average.X2P = mean(X2P), max.X2P = max(X2P))
+  
+b2 %>%
+  group_by(Tm) %>%
+  summarise(N = n(), avg_PTS = mean(PTS, na.rm=TRUE)) 
+
+ggplot(b2, aes(G,PTS)) + geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(b2, aes(X3P,PTS)) + geom_point() + 
+  geom_smooth(method = "lm")
+
+ggplot(b2, aes(X2P,PTS)) + geom_point() + 
+  geom_smooth(method = "lm")
+```
+
