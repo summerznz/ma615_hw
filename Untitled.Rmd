@@ -287,63 +287,8 @@ a<- data2 %>% filter(BOB=="CVS Health - Commercial") %>% group_by(yearmonth, pro
         #scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
 ```
 
-```{r}
-
-data2_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
-                      FROM Switch_Patient
-                      where dispensed_date between "2016-07-01" and "2018-03-31" 
-                      group by BOB,product_name,dispensed_date
-                      order by dispensed_date')
-data2_bob$yearmonth <- as.Date(as.yearmon(data2_bob$dispensed_date))
-b <- write.csv(data2_bob, file = "Switch__Patient.csv")
-data2_bob<-data2_bob%>% mutate(yearmonth = format(as.Date(data2_bob$dispensed_date, format="%Y-%m-%d"),"%Y-%m"))
-data2_bob %>% filter(BOB=="CVS Health - Medicare") %>% group_by(yearmonth, product_name) %>% 
-        summarise(total_num =sum(num)) %>% 
-        spread(product_name, total_num) %>% ungroup()
-
-ggplot() + 
-        geom_line(data = data2_bob, aes(x = yearmonth, y = XIIDRA, color = "XIIDRA"), size=1.5) + 
-        geom_line(data = data2_bob, aes(x = yearmonth, y = RESTASIS, color = "RESTASIS"),size=1.5) + 
-        theme_classic()+
-        scale_x_datetime(date_breaks = "3 months")+
-        ggtitle(paste("Trend of Amount of Prescription among "))+
-        xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("XIIDRA","RESTASIS"))+ 
-        scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+
-        scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
-```
-
-```{r}
-data2_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
-                      FROM Switch_Patient
-                      where dispensed_date between "2016-07-01" and "2018-03-31" 
-                      group by BOB,product_name,dispensed_date
-                      order by dispensed_date')
-data2_bob$dispensed_date <- as.Date(as.yearmon(data2_bob$dispensed_date))
-
-write.csv(data2_bob, file = "Switch__Patient.csv")
-```
-
-```{r}
-data2_bob <- read.csv("Switch__Patient.csv")
-a<- data2_bob %>% filter(BOB=="CVS Health - Commercial") %>% group_by(dispensed_date, product_name) %>% 
-        summarise(total_num =sum(num)) %>% 
-        spread(product_name, total_num) %>% 
-        ungroup() %>%
-        transmute(dispensed_date= dispensed_date,  xiidra = XIIDRA, restasis = RESTASIS)
 
 
- 
-  ggplot() + 
-        geom_line(data = data2_bob, aes(x = dispensed_date, y = data2_bob$xiidra, color = "xiidra"), size=1.5) + 
-        geom_line(data =  data2_bob, aes(x = dispensed_date, y = restasis, color = "restasis"),size=1.5, group=1) + 
-        theme_classic()+
-       #scale_x_datetime(date_breaks = "3 months")+
-        ggtitle(paste("Trend of Amount of Prescription among "))+
-        xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("xiidra","restasis"))+ 
-        scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())
-      #+scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
-
-```
 
 ```{r}
 data6<-dbGetQuery(temp,'Select BOB,count(patient_id)as num,ADDRESS_AT_CALL
