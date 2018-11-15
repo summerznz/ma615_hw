@@ -1,0 +1,383 @@
+---
+title: "new"
+author: "name"
+date: "11/13/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+```{r}
+# top 10 BOB
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+library(tidyverse)
+library(scales)
+library(datetime)
+library(lubridate)
+library(ggplot2)
+library(reshape)
+temp<-dbConnect(SQLite(),dbname="Shire.db")
+data1<-dbGetQuery(temp,'Select  BOB,count(patient_id) as num
+from New_Patient
+Group by BOB
+order by num desc')
+```
+
+```{r}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+temp<-dbConnect(SQLite(),dbname="Shire.db")
+data1_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
+           FROM New_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by BOB,product_name,dispensed_date
+           order by dispensed_date')
+data1_bob$yearmonth <- as.Date(as.yearmon(data1_bob$dispensed_date))
+#%>%
+ # group_by(product_name,yearmonth)%>%
+  #summarise(sum=sum(num))%>%
+  #mutate(healthPlan = "CVS Health_nonMedicare")
+result<-data1_bob %>% group_by(yearmonth, product_name) %>% 
+       summarise(total_num =sum(num)) %>% 
+       spread(product_name, total_num) %>% 
+       ungroup() %>%
+       transmute(yearmonth= yearmonth,  xiidra = XIIDRA, restasis = RESTASIS)
+result$Percentage_XIIdra<-NA
+result$Percentage_Restasis<-NA
+result$BOB<-NA
+result$total<-NA
+for (i in 1:nrow(result)){
+  result$Percentage_XIIdra[i]<-result$xiidra[i]/(result$restasis[i]+result$xiidra[i])
+  result$Percentage_Restasis[i]<-result$restasis[i]/(result$restasis[i]+result$xiidra[i])
+  result$BOB[i]<-c("Commercial")
+  result$total[i]<-result$restasis[i]+result$xiidra[i]
+}
+
+
+ggplot() + 
+  geom_line(data = result, aes(x = yearmonth, y = xiidra, color = "xiidra"), size=1.5) +
+  geom_line(data = result, aes(x = yearmonth, y = restasis, color = "restasis"),size=1.5) +
+  geom_line(data = result, aes(x = yearmonth, y = total, color = "total"),size=1.5) + scale_x_datetime(date_breaks = "3 months")+ggtitle("Trend of Amount of Prescription among CVS Health_nonMedicare")+
+  xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("xiidra","restasis","total"))+  scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+
+ggplot() + 
+  geom_line(data = result, aes(x = yearmonth, y = Percentage_XIIdra,color = "xiidra"), size=1.5)+  geom_line(data = result, aes(x = yearmonth, y = Percentage_Restasis,color = "restasis"),size=1.5)+scale_x_datetime(date_breaks = "3 months")+ggtitle("Percentage change in two products among CVS Health_nonMedicare")+xlab("Date")+ylab("Percentage")+scale_fill_discrete(breaks=c("xiidra","restasis"))+scale_color_brewer(palette="Dark2") +theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+
+
+      ggplot() + 
+      geom_line(data = result1(), aes(x = yearmonth, y = xiidra, color = "xiidra"), size=1.5) +
+      geom_line(data = result1(), aes(x = yearmonth, y = restasis, color = "restasis"),size=1.5) + 
+      theme_classic()+
+      scale_x_datetime(date_breaks = "3 months")+
+      ggtitle("Trend of Amount of Prescription among Different BOB" )+
+      xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("xiidra","restasis"))+ 
+      scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+
+      scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+```
+```{r}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+library(tidyverse)
+library(scales)
+library(datetime)
+library(lubridate)
+library(ggplot2)
+library(reshape)
+temp<-dbConnect(SQLite(),dbname="Shire.db")
+data1<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, POP_DESC,dispensed_date
+           FROM New_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by POP_DESC,product_name,dispensed_date
+           order by num')
+data11<-dbGetQuery(temp,'SELECT count(patient_id2)as num, product_name, POP_DESC,dispensed_date
+           FROM Switch_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by POP_DESC,product_name,dispensed_date
+           order by num')
+library(zoo)
+
+total<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, POP_DESC,dispensed_date
+           FROM New_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by POP_DESC,product_name,dispensed_date
+           order by dispensed_date')
+data3<-data1 %>% group_by(POP_DESC)%>% 
+   summarize(num=sum(num)) %>% arrange(desc(num))
+data1$yearmonth <- as.Date(as.yearmon(data1$dispensed_date))
+data11$yearmonth <- as.Date(as.yearmon(data11$dispensed_date))
+data2<-data1 %>% group_by(product_name,yearmonth) %>% 
+   summarize(num=sum(num)) %>% arrange(desc(product_name))
+data22<-data11 %>% group_by(product_name,yearmonth) %>% 
+   summarize(num=sum(num)) %>% arrange(desc(product_name))
+
+# total new
+ggplot()+geom_line(data=data2,aes(x=yearmonth,y=num,color=product_name),size=1.5)+xlab("Date")+ylab("Total Perscriptions Per Month")+scale_fill_discrete(breaks=c("xiidra","restasis"))+scale_color_brewer(palette="Dark2") +theme(axis.title.x = element_text(face="bold",  size=17), axis.title.y = element_text(face="bold",  size=17),plot.title = element_text(size=19, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=14), axis.text.y= element_text(vjust=0.5, size=15),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+scale_x_date(breaks = "3 month",labels = date_format("%m-%Y"))
+```
+
+
+
+
+```{r}
+data1<-dbGetQuery(temp,'Select  BOB,count(patient_id) as num
+                  from New_Patient
+                  Group by BOB
+                  order by num desc')
+
+# working directory on local host is : setwd("~/Desktop/shire")
+# the file path is nex fixed, make sure to set the working directory
+detach("package:plyr", unload=TRUE) 
+library(dplyr) 
+
+library(readr)
+library(readxl)
+library(data.table)
+library(tidyverse)
+
+
+
+New_Patient<- fread("New_Patient_Rxs.csv")
+
+
+
+CVS<-New_Patient%>%filter(BOB == "CVS Health - Commercial")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "CVS Health - Commerical")
+  
+Shire_nonbenefit <- New_Patient%>%filter(BOB == "Shire - Non-Benefit")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "Shire - Non-Benefit")
+
+UnitedHealthcare<-New_Patient%>%filter(BOB == "UnitedHealthcare - Medicare")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "UnitedHealthcare - Medicare")
+
+epxScpt<-New_Patient%>%filter(BOB == "Express Scripts - Commercial")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "Express Scripts - Commercial")
+
+CVS_2<-New_Patient%>%filter(BOB == "CVS Health - Medicare")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "CVS Health - Medicare")
+
+Humana <- New_Patient%>%filter(BOB == "Humana - Medicare")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "Humana - Medicare")
+
+cash<-New_Patient%>%filter(BOB == "Cash - Cash")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "Cash - Cash")
+
+All_Other_third_party <- New_Patient%>%filter(BOB == "All Other Third Party - Mix")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "All Other Third Party - Mix")
+
+OptumRx<-New_Patient%>%filter(BOB == "OptumRx - Commercial")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "OptumRx - Commercial")
+
+Aetna<-New_Patient%>%filter(BOB == "Aetna - Commercial")%>%
+  group_by(product_name)%>%
+  summarise(n=n())%>%
+  mutate(healthPlan = "Aetna - Commercial")
+
+
+final.insureance<-rbind(Shire_nonbenefit,CVS,CVS_2,epxScpt,cash,All_Other_third_party,OptumRx,UnitedHealthcare,Aetna,Humana)
+
+########start with the plot
+
+# Get the levels for type in the required order
+final.insureance$product_name = factor(final.insureance$product_name, levels = c("RESTASIS","XIIDRA"))
+
+# Calculate the percentages
+library(plyr)
+library(ggplot2)
+final.insureance = ddply(final.insureance, .(healthPlan), transform, percent = n/sum(n) * 100)
+
+# Format the labels and calculate their positions
+final.insureance = ddply(final.insureance, .(healthPlan), transform, pos = (cumsum(n) - 0.5 * n))
+final.insureance$label = paste0(sprintf("%.0f", final.insureance$percent), "%")
+final.insureance$n<-final.insureance$n/1000
+colnames(final.insureance) <- c("Product", "n","healthPlan","percent","pos","label")
+
+finan <- write.csv(final.insureance, file = "final.csv")
+
+# plot
+
+p<-ggplot(final.insureance, aes(x = reorder(healthPlan, -n), y = n, fill = Product)) +
+  geom_bar(position = position_stack(), stat = "identity", width = .8) +
+  scale_y_continuous("Number of Total Prescriptions(in thousands)")+scale_x_discrete("Parent Company of Insurance Plan")+ theme(axis.text.x = element_text(size=12, angle=30),axis.text.y = element_text(
+    size=8))+
+  theme(legend.title = element_text(size=10, 
+                                    face="bold"))+
+  theme(legend.text = element_text( size=10,face="bold"))+theme(legend.position = c(0.8, 0.8))
+p
+
+pp<-ggplot(final.insureance, aes(x =healthPlan, y = percent, fill = Product))+
+  geom_bar(stat = "identity", width = .8)+scale_fill_manual("Product", values = c("RESTASIS" = "mistyrose1", "XIIDRA" = "steelblue1")) +
+  geom_text(aes(label = label), color="black",position = position_stack(vjust = 0.5), size = 5,family = "Arial") +
+  scale_y_continuous(name = "Perentage of Total Prescriptions ",labels = c("0%","25%","50%","75%","100%")) +
+  theme(axis.text.x = element_text(size=10, angle=30,family = "Arial",face = "bold"),axis.text.y = element_text( size=12,family = "Arial",face = "bold"))+ 
+  theme(axis.title = element_text(size=16,face = "bold"))+
+  theme(legend.title = element_text(size=10, face="bold"))+
+  theme(legend.text = element_text( size=10,face="bold"))
+
+pp
+```
+
+```{r}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+temp<-dbConnect(SQLite(),dbname="Shire.db")
+data1_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
+           FROM New_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by BOB,product_name,dispensed_date
+           order by dispensed_date')
+data1_bob$yearmonth <- as.Date(as.yearmon(data1_bob$dispensed_date))
+
+a <- data1_bob %>% separate(BOB,  into = c("BOB", "B"), sep = "\\-")
+a <- write.csv(a, filt)
+
+a %>% filter(str_detect(BOB, "CVS Health"))
+```
+
+```{r}
+library(DBI)
+library(RSQLite)
+library(tidyverse)
+temp<-dbConnect(SQLite(),dbname="Shire.db")
+data2_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
+           FROM Switch_Patient
+            where dispensed_date between "2016-07-01" and "2018-03-31" 
+           group by BOB,product_name,dispensed_date
+           order by dispensed_date')
+data2_bob$yearmonth <- as.Date(as.yearmon(data2_bob$dispensed_date))
+data2 <- read.csv("Switch__Patient.csv")
+a<- data2 %>% filter(BOB=="CVS Health - Commercial") %>% group_by(yearmonth, product_name) %>% 
+        summarise(total_num =sum(num)) %>% 
+        spread(product_name, total_num) %>% 
+        ungroup() %>%
+        transmute(yearmonth= yearmonth,  xiidra = XIIDRA, restasis = RESTASIS)
+
+ ggplot() + 
+        geom_line(data = a, aes(x = yearmonth, y = xiidra, color = "xiidra", group=1), size=1.5) + 
+        geom_line(data = a, aes(x = yearmonth, y = restasis, color = "restasis", group=1),size=1.5) + 
+        theme_classic()+
+        #scale_x_datetime(date_breaks = "3 months")+
+        ggtitle(paste("Trend of Amount of Prescriptions among ") )+
+        xlab("Date")+ylab("Amount of Product Prescriptions")+scale_fill_discrete(breaks=c("xiidra","restasis"))+ 
+        scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())#+
+        #scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+```
+
+```{r}
+
+data2_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
+                      FROM Switch_Patient
+                      where dispensed_date between "2016-07-01" and "2018-03-31" 
+                      group by BOB,product_name,dispensed_date
+                      order by dispensed_date')
+data2_bob$yearmonth <- as.Date(as.yearmon(data2_bob$dispensed_date))
+b <- write.csv(data2_bob, file = "Switch__Patient.csv")
+data2_bob<-data2_bob%>% mutate(yearmonth = format(as.Date(data2_bob$dispensed_date, format="%Y-%m-%d"),"%Y-%m"))
+data2_bob %>% filter(BOB=="CVS Health - Medicare") %>% group_by(yearmonth, product_name) %>% 
+        summarise(total_num =sum(num)) %>% 
+        spread(product_name, total_num) %>% ungroup()
+
+ggplot() + 
+        geom_line(data = data2_bob, aes(x = yearmonth, y = XIIDRA, color = "XIIDRA"), size=1.5) + 
+        geom_line(data = data2_bob, aes(x = yearmonth, y = RESTASIS, color = "RESTASIS"),size=1.5) + 
+        theme_classic()+
+        scale_x_datetime(date_breaks = "3 months")+
+        ggtitle(paste("Trend of Amount of Prescription among "))+
+        xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("XIIDRA","RESTASIS"))+ 
+        scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())+
+        scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+```
+
+```{r}
+data2_bob<-dbGetQuery(temp,'SELECT count(patient_id)as num, product_name, BOB,dispensed_date
+                      FROM Switch_Patient
+                      where dispensed_date between "2016-07-01" and "2018-03-31" 
+                      group by BOB,product_name,dispensed_date
+                      order by dispensed_date')
+data2_bob$dispensed_date <- as.Date(as.yearmon(data2_bob$dispensed_date))
+
+write.csv(data2_bob, file = "Switch__Patient.csv")
+```
+
+```{r}
+data2_bob <- read.csv("Switch__Patient.csv")
+a<- data2_bob %>% filter(BOB=="CVS Health - Commercial") %>% group_by(dispensed_date, product_name) %>% 
+        summarise(total_num =sum(num)) %>% 
+        spread(product_name, total_num) %>% 
+        ungroup() %>%
+        transmute(dispensed_date= dispensed_date,  xiidra = XIIDRA, restasis = RESTASIS)
+
+
+ 
+  ggplot() + 
+        geom_line(data = data2_bob, aes(x = dispensed_date, y = data2_bob$xiidra, color = "xiidra"), size=1.5) + 
+        geom_line(data =  data2_bob, aes(x = dispensed_date, y = restasis, color = "restasis"),size=1.5, group=1) + 
+        theme_classic()+
+       #scale_x_datetime(date_breaks = "3 months")+
+        ggtitle(paste("Trend of Amount of Prescription among "))+
+        xlab("Date")+ylab("Amount of Product Prescription")+scale_fill_discrete(breaks=c("xiidra","restasis"))+ 
+        scale_color_brewer(palette="Dark2")+theme(axis.title.x = element_text(face="bold",  size=13), axis.title.y = element_text(face="bold",  size=13),plot.title = element_text(size=15, face="bold"),  axis.text.x  = element_text(angle=45,vjust=0.5, size=10),legend.text = element_text(face="bold",size=15),legend.title=element_blank())
+      #+scale_x_date(breaks = "1 month",labels = date_format("%m-%Y"))
+
+```
+
+```{r}
+data6<-dbGetQuery(temp,'Select BOB,count(patient_id)as num,ADDRESS_AT_CALL
+                  from Switch_Patient N, (Select Shire_ID,ADDRESS_AT_CALL
+                  from All_Call  
+                  group by Shire_ID) as A
+                  where N.Shire_ID=A.SHIRE_ID AND N.product_name=="XIIDRA"
+                  group by A.ADDRESS_AT_CALL
+                  order by num desc') 
+
+ a<-     data6 %>% filter(BOB=="CVS Health - Commercial")%>%
+        group_by(ADDRESS_AT_CALL) %>% 
+        summarise(n_c=n()) %>% 
+        mutate(State=str_trim(str_extract(ADDRESS_AT_CALL,"[A-Z][A-Z][^A-Z]")))%>%group_by(State)%>%summarise(total=n())
+
+
+
+      # specify some map projection/options
+      gg <- list(
+        scope = "usa",
+        projection = list(type = "albers usa"),
+        showlakes = TRUE,
+        lakecolor = toRGB("white")
+      )
+      
+      plot_geo(a, locationmode = "USA-states") %>%
+        add_trace(
+          z = ~total, locations = ~State,
+          color = ~total, colors = "Reds"
+        ) %>%
+        colorbar(title = "Total Presription") %>%
+        layout(
+          title = paste("Total presription in"),
+          geo = gg
+        )
+```
+
